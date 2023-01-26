@@ -2,46 +2,57 @@ import express, { Express, Request, Response } from 'express'
 import axios, { AxiosResponse } from 'axios'
 import CircuitBreaker from 'opossum'
 
-const app: Express = express()
-app.listen(3000, () => console.log('App listening on port 3000'))
-
-const jumps = process.env.JUMPS || 6
-const throwError = () => Math.random() > .6 && process.env.INJECT_ERR === '1'
-const m = `hello from ${process.env.ID}\n`
-const curtime = () => `${new Date().getMinutes()}:${new Date().getSeconds()}`
-const message = (data: string) =>
-  `\nThis is ${process.env.ID} @${curtime()} -> Next ${data}`
-const errmsg = () =>
-  `\n${process.env.ID} @${curtime()} -> unavailable`
-
-const breakerOptions = {
-  timeout: 300, // If name service takes longer than .3 seconds, trigger a failure
-  errorThresholdPercentage: 50, // When 20% of requests fail, trip the breaker
-  resetTimeout: 10000 // After 10 seconds, try again.
+interface CustomResponse {
+  location: string
+  data?: any
+  error?: string
 }
 
-const chain = (endpoint: string): Promise<string> =>
+//? ------- ExpressJS --------------
+const app: Express = express()
+app.listen(3000, () => console.log('App listening on port 3000'))
+//? ------- ExpressJS --------------
+
+//* ------- Variables | Messages --------------
+const jumps = process.env.JUMPS || 6
+const throwError = () => Math.random() > .6 && process.env.INJECT_ERR === '1'
+const curtime = () => `${new Date().getMinutes()}:${new Date().getSeconds()}`
+const message = (data: any): CustomResponse => ({
+  location: `\nThis is ${process.env.ID} @${curtime()}`,
+  data
+})
+const errmsg = (err: any): CustomResponse => ({
+  location: `\nThis is ${process.env.ID} @${curtime()}`,
+  error: err || `\n${process.env.ID} @${curtime()} -> unavailable`
+})
+//* ------- Variables | Messages --------------
+
+//! -------------- Circuit Breaker --------------
+const breakerOptions = {
+  timeout: 300,
+  errorThresholdPercentage: 50,
+  resetTimeout: 10000
+}
+const chain = (endpoint: string): Promise<CustomResponse> =>
   new Promise((resolve, reject) =>
     axios.get(endpoint)
       .then((response: AxiosResponse) => {
         resolve(message(response.data))
       }).catch((err: any) => {
-        reject(message(err.response.data))
+        reject(errmsg(err.response.data))
       })
   )
-
 const breaker = new CircuitBreaker(chain, breakerOptions)
+//! -------------- Circuit Breaker --------------
 
-app.get('/', (req: Request, res: Response) => res.send(m))
-
+// -------------- Endpoint --------------
 app.get('/chain', async (req: Request, res: Response) => {
   const count = (parseInt(`${req.query['count']}`) || 0) + 1
   const endpoint = `${process.env.CHAIN_SVC}?count=${count}`
-
   if (throwError())
-    return res.status(502).send(message(errmsg()))
+    return res.status(502).send(errmsg(''))
   if (count >= jumps)
-    return res.status(200).send('\nLast')
+    return res.status(200).send(message('\nLast'))
   try {
     const response = await breaker.fire(endpoint)
     res.status(200).send(response)
@@ -49,7 +60,9 @@ app.get('/chain', async (req: Request, res: Response) => {
     res.status(200).send(error)
   }
 })
+// -------------- Endpoint --------------
 
+//? -------------- Events --------------
 breaker.on("fallback", () => console.log('fallback'))
 breaker.on("success", () => console.log("success"))
 breaker.on("failure", () => console.log("failed"))
@@ -58,3 +71,4 @@ breaker.on("reject", () => console.log("rejected"))
 breaker.on("open", () => console.log("opened"))
 breaker.on("halfOpen", () => console.log("halfOpened"))
 breaker.on("close", () => console.log("closed"))
+//? -------------- Events --------------

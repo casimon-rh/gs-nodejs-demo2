@@ -14,3 +14,5 @@ docker run --network=chains -e JUMPS=3 \
 docker run --network=chains -e JUMPS=3 \
   -e ID=C -e NEXT_SVC=http://aa:3000 -e CHAIN_SVC=http://aa:3000/chain \
   -e INJECT_ERR=1 --name cc -d docker.io/library/service:simple
+
+watch -c "curl http://localhost:3000/chain 2>/dev/null | jq"
