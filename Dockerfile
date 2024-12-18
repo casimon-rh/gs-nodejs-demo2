@@ -1,7 +1,7 @@
 FROM registry.access.redhat.com/ubi9/nodejs-18
-WORKDIR /app
+# WORKDIR /app
 COPY package* .
-RUN mkdir node_modules && npm i
+RUN npm i
 COPY . .
 RUN npm run build
 CMD npm start
