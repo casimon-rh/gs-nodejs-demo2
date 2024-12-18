@@ -1,7 +1,7 @@
 FROM registry.access.redhat.com/ubi9/nodejs-18
 # WORKDIR /app
-COPY package* .
+COPY --chown=default:root package* .
 RUN npm i
-COPY . .
+COPY --chown=default:root . .
 RUN npm run build
 CMD npm start
