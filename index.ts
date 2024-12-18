@@ -14,7 +14,7 @@ app.listen(3000, () => console.log('App listening on port 3000'))
 //? ------- ExpressJS --------------
 
 //* ------- Variables | Messages --------------
-const jumps = process.env.JUMPS || 6
+const jumps: number = parseInt(process.env.JUMPS || "6")
 const throwError = () => Math.random() > .6 && process.env.INJECT_ERR === '1'
 const curtime = () => `${new Date().getMinutes()}:${new Date().getSeconds()}`
 const message = (data: any): CustomResponse => ({

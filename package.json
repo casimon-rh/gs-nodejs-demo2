@@ -16,12 +16,12 @@
     "@types/node": "^18.11.5",
     "@types/opossum": "^6.2.2",
     "concurrently": "^7.6.0",
-    "nodemon": "^2.0.20",
+    "nodemon": "^3.1.9",
     "ts-node": "^10.9.1",
     "typescript": "^4.8.4"
   },
   "dependencies": {
-    "axios": "^1.2.2",
+    "axios": "^1.7.9",
     "express": "^4.18.2",
     "opossum": "^7.0.1"
   }
